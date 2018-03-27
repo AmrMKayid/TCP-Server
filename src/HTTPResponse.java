@@ -1,20 +1,22 @@
+import java.io.FileInputStream;
+import java.io.Serializable;
 
-public class HTTPResponse {
+public class HTTPResponse implements Serializable {
 
 	String Status;
     String Version;
-    String Timestamp;
+    long Timestamp;
     String Format;
     String Connection;
-    Object payload;
+    FileInputStream payload;
     
     public HTTPResponse(
     		String Status,
             String Version,
-            String Timestamp,
+            long Timestamp,
             String Format,
             String Connection,
-            Object payload) {
+            FileInputStream payload) {
     	
     	this.Status = Status;
         this.Version = Version;
@@ -23,4 +25,12 @@ public class HTTPResponse {
         this.Connection = Connection;
         this.payload = payload;
 	}
+    
+    public String toString() {
+		return Status+" "+Version+"\n"+
+			   Timestamp+"\n"+
+			   Format+"\n"+
+			   Connection;
+    	
+    }
 }

@@ -1,6 +1,6 @@
+import java.io.Serializable;
 
-
-public class HTTPRequest {
+public class HTTPRequest implements Serializable {
 
     String Method;
     String URL;
@@ -18,7 +18,7 @@ public class HTTPRequest {
             String AcceptedFormat,
             String Connection, String UserName) {
 
-        this.Method = Method;
+        this.Method = Method.toUpperCase();
         this.URL = URL;
         this.Version = Version;
         this.Host = Host;
@@ -26,6 +26,14 @@ public class HTTPRequest {
         this.Connection = Connection;
         this.UserName = UserName;
     }
+    
+    public String toString() {
+		return Method+" "+URL+" "+Version+"\n"+
+			   Host+"\n"+
+			   AcceptedFormat+"\n"+
+			   Connection;
+    	
+    }
 
-
+//get mo 1.1 chrome:D png close
 }
