@@ -12,7 +12,7 @@ public class TCPServer {
 
 	public static ArrayList<clientThread> clients = new ArrayList<clientThread>();
 
-	public static ArrayList<HTTPRequest> requests = new ArrayList<HTTPRequest>();
+	public static Queue<HTTPRequest> requests = new LinkedList<HTTPRequest>();
 
 	public static void main(String args[]) {
 
@@ -38,7 +38,7 @@ public class TCPServer {
 		while (true) {
 			try {
 				clientSocket = serverSocket.accept();
-				clientThread currClient = new clientThread(clientSocket, clients,requests);
+				clientThread currClient = new clientThread(clientSocket, clients, requests);
 				clients.add(currClient);
 				currClient.start();
 				System.out.println("Client <" + clientNum + "> is connected!");
@@ -61,9 +61,9 @@ class clientThread extends Thread {
 	private ObjectOutputStream os = null;
 	private Socket clientSocket = null;
 	private final ArrayList<clientThread> clients;
-	public static ArrayList<HTTPRequest> requests;
+	public static Queue<HTTPRequest> requests;
 
-	public clientThread(Socket clientSocket, ArrayList<clientThread> clients, ArrayList<HTTPRequest> requests) {
+	public clientThread(Socket clientSocket, ArrayList<clientThread> clients, Queue<HTTPRequest> requests) {
 
 		this.clientSocket = clientSocket;
 		this.clients = clients;
@@ -74,7 +74,7 @@ class clientThread extends Thread {
 	public void run() {
 
 		ArrayList<clientThread> clients = this.clients;
-		ArrayList<HTTPRequest> requests = this.requests;
+		Queue<HTTPRequest> requests = this.requests;
 
 		try {
 
@@ -124,11 +124,7 @@ class clientThread extends Thread {
 
 			System.out.println("Client Name is " + name);
 
-			this.os.writeObject("*** Welcome " + name + " to ChatiApp ***");
-			this.os.writeObject("To broadcast: write your message");
-			this.os.writeObject("To send to specific user: @username: <Your message>");
-			this.os.writeObject("To view all members: $");
-			this.os.writeObject("To leave: type bye or exit");
+			this.os.writeObject("*** Welcome " + name + " to the server ***");
 			this.os.flush();
 
 			synchronized (this) {
@@ -161,51 +157,53 @@ class clientThread extends Thread {
 				this.os.flush();
 				// read the incoming request
 				HTTPRequest request = (HTTPRequest) is.readObject();
-				this.os.writeObject("Request {\n"+request+"\n}\nreceived Successuflly");
+				this.os.writeObject("Request {\n" + request + "\n}\nreceived Successuflly");
 				this.os.flush();
-				//add to the queue
+				// add to the queue
 				requests.add(request);
-			
-				
-//				
-//				File file = new File("docroot/" + request.URL + "." + request.AcceptedFormat);
-//				String status = file.exists() ? "200 OK" : "404 Not Found";
-//				FileInputStream fis = new FileInputStream(file);
-//				HTTPResponse response = new HTTPResponse(status, request.Version, System.currentTimeMillis(),
-//						request.AcceptedFormat, request.Connection, fis);
-//				this.os.writeObject(response);
 
-				/*to be done when handling the requests ,if the connection value is close then close the connection and remove the client*/
-//				this.os.writeObject("*** Bye " + name + " ***");
-//				this.os.flush();
-//				System.out.println(name + " disconnected.");
-//				clients.remove(this);
-//				this.is.close();
-//				this.os.close();
-//				clientSocket.close();
+				//
+				// File file = new File("docroot/" + request.URL + "." +
+				// request.AcceptedFormat);
+				// String status = file.exists() ? "200 OK" : "404 Not Found";
+				// FileInputStream fis = new FileInputStream(file);
+				// HTTPResponse response = new HTTPResponse(status, request.Version,
+				// System.currentTimeMillis(),
+				// request.AcceptedFormat, request.Connection, fis);
+				// this.os.writeObject(response);
+
+				/*
+				 * to be done when handling the requests ,if the connection value is close then
+				 * close the connection and remove the client
+				 */
+				// this.os.writeObject("*** Bye " + name + " ***");
+				// this.os.flush();
+				// System.out.println(name + " disconnected.");
+				// clients.remove(this);
+				// this.is.close();
+				// this.os.close();
+				// clientSocket.close();
 
 				/*
 				 * inform other users that a new client has left the pool :D
 				 */
-//				synchronized (this) {
-//
-//					if (!clients.isEmpty()) {
-//
-//						for (clientThread curClient : clients) {
-//
-//							if (curClient != null && curClient != this && curClient.clientName != null) {
-//								curClient.os.writeObject("*** The user " + name + " disconnected ***");
-//								curClient.os.flush();
-//							}
-//						}
-//					}
-//				}
+				// synchronized (this) {
+				//
+				// if (!clients.isEmpty()) {
+				//
+				// for (clientThread curClient : clients) {
+				//
+				// if (curClient != null && curClient != this && curClient.clientName != null) {
+				// curClient.os.writeObject("*** The user " + name + " disconnected ***");
+				// curClient.os.flush();
+				// }
+				// }
+				// }
+				// }
 
-				
-//
-}
-		}
-			catch (IOException e) {
+				//
+			}
+		} catch (IOException e) {
 
 			System.out.println(e);
 
@@ -215,78 +213,4 @@ class clientThread extends Thread {
 		}
 	}
 
-	void viewAll() {
-
-		try {
-			this.os.writeObject("\nAll available people: ");
-		} catch (Exception e) {
-			System.out.println(e);
-		}
-		for (clientThread c : clients) {
-			try {
-				this.os.writeObject(c.clientName);
-			} catch (Exception e) {
-				System.out.println(e);
-			}
-		}
-	}
-
-	/****
-	 * This function transfers message to all the client connected to the server
-	 ***/
-
-	void broadcast(String line, String name) throws IOException, ClassNotFoundException {
-
-		/* Transferring a message to all the clients */
-
-		synchronized (this) {
-
-			for (clientThread currClient : clients) {
-
-				if (currClient != null && currClient.clientName != null && currClient.clientName != this.clientName) {
-					currClient.os.writeObject("<" + name + "> " + line);
-					currClient.os.flush();
-				}
-			}
-			this.os.writeObject("message sent successfully.");
-			this.os.flush();
-			System.out.println("message sent by " + this.clientName.substring(1));
-		}
-
-	}
-
-	/****
-	 * This function transfers message or files to a particular client connected to
-	 * the server
-	 ***/
-
-	void unicast(String line, String name) throws IOException, ClassNotFoundException {
-
-		String[] words = line.split(":", 2);
-
-		if (words.length > 1 && words[1] != null) {
-
-			words[1] = words[1].trim();
-
-			if (!words[1].isEmpty()) {
-
-				for (clientThread currClient : clients) {
-					if (currClient != null && currClient != this && currClient.clientName != null
-							&& currClient.clientName.equals(words[0])) {
-						currClient.os.writeObject("<" + name + "> " + words[1]);
-						currClient.os.flush();
-
-						System.out.println(this.clientName.substring(1) + " send a private message to client "
-								+ currClient.clientName.substring(1));
-
-						/* Echo this message to let the sender know the private message was sent. */
-
-						this.os.writeObject("Private Message sent to " + currClient.clientName.substring(1));
-						this.os.flush();
-						break;
-					}
-				}
-			}
-		}
-	}
 }
